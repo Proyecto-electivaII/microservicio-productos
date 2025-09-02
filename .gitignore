@@ -24,6 +24,5 @@ hs_err_pid*
 replay_pid*
 
 # Project specific
-.idea/
 .mvn/
 target/
