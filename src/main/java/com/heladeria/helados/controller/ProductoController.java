@@ -1,4 +1,5 @@
 package com.heladeria.helados.controller;
+
 import com.heladeria.helados.entity.Producto;
 import com.heladeria.helados.entity.Inventario;
 import com.heladeria.helados.service.ProductoService;
@@ -14,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/productos")
@@ -27,8 +27,9 @@ public class ProductoController {
     @Autowired
     private InventarioService inventarioService;
 
-    // ----- Productos -----
 
+
+    // ----- Productos -----
     @GetMapping("/listarProductos")
     @Operation(summary = "Obtener todos los productos", description = "Devuelve una lista de todos los productos registrados.")
     @ApiResponses(value = {
@@ -39,6 +40,8 @@ public class ProductoController {
         List<Producto> lista = productoService.listar();
         return new ResponseEntity<>(lista, HttpStatus.OK);
     }
+
+
 
     @Operation(summary = "Crea un producto", description = "Crea un nuevo producto")
     @PostMapping("/crear")
@@ -52,6 +55,9 @@ public class ProductoController {
         return new ResponseEntity<>(productoNuevo, HttpStatus.CREATED);
     }
 
+
+
+
     @Operation(summary = "Actualizar un producto", description = "Actualiza los datos de un producto existente.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Producto actualizado con éxito"),
@@ -60,33 +66,64 @@ public class ProductoController {
     })
     @PutMapping("/actualizar/{id}")
     public ResponseEntity<Producto> actualizarProducto(@PathVariable @Parameter(description = "ID del producto") Integer id,
-                                   @RequestBody  @Parameter(description = "Datos actualizados del producto") Producto producto) {
+                                                       @RequestBody @Parameter(description = "Datos actualizados del producto") Producto producto) {
         Producto existente = productoService.buscarPorId(id);
         // si no existe se actualiza
         if (existente != null) {
             existente.setNombre(producto.getNombre());
             existente.setPrecio(producto.getPrecio());
-            Producto productoActualizado =  productoService.guardar(existente);
+            Producto productoActualizado = productoService.guardar(existente);
             return new ResponseEntity<>(productoActualizado, HttpStatus.OK);
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
+
+
     @DeleteMapping("/{id}")
-    public void eliminarProducto(@PathVariable Integer id) {
+    @Operation(summary = "Eliminar un producto", description = "Elimina un producto basado en su ID.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Producto eliminado con éxito"),
+            @ApiResponse(responseCode = "404", description = "Producto no encontrado")
+    })
+    public ResponseEntity<Producto> eliminarProducto(@PathVariable Integer id) {
         productoService.eliminar(id);
+        return ResponseEntity.noContent().build();
     }
+
+
+
 
     // ----- Inventario -----
+    @Operation(summary = "Listar inventario", description = "Devuelve una lista con todos los registros de inventario.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista de inventario obtenida con éxito"),
+            @ApiResponse(responseCode = "204", description = "No hay registros de inventario"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
     @GetMapping("/inventario/listarInventario")
     public ResponseEntity<List<Inventario>> listarInventario() {
-        return new ResponseEntity<>(inventarioService.listar(), HttpStatus.OK);
+        List<Inventario> lista = inventarioService.listar();
+        if (lista.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(lista);
     }
 
+
+
+
+    @Operation(summary = "actualizar inventario", description = "Actualiza la cantidad existente de helados en el inventario")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Inventario actualizado con éxito"),
+            @ApiResponse(responseCode = "404", description = "El registro de inventario no fue encontrado"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
     @PatchMapping("/actualizar-inventario/{id}")
-    public void actualizarStock(
-            @PathVariable Integer id,
-            @RequestParam Integer cantidad) {
+    public ResponseEntity<Producto> actualizarStock(@PathVariable Integer id, @RequestParam Integer cantidad) {
         inventarioService.actualizarStock(id, cantidad);
+        return ResponseEntity.noContent().build();
     }
 }
+
+
