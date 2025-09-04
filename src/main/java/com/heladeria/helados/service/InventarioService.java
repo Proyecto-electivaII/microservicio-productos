@@ -7,6 +7,7 @@ import com.heladeria.helados.repository.ProductoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.ResourceTransformer;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,16 +20,18 @@ public class InventarioService {
 
     @Autowired
     private ProductoRepository productoRepository;
+    @Autowired
+    private ResourceTransformer resourceTransformer;
 
     public List<Inventario> listar() {
         return inventarioRepository.findAll();
     }
 
-    public void actualizarStock(Integer productoId, Integer cantidad) {
+    public Inventario actualizarStock(Integer productoId, Integer cantidad) {
         // validar si existe producto
         Optional<Producto> productoOpt = productoRepository.findById(productoId);
         if (!productoOpt.isPresent()) {
-            return; // no existe producto -> no hacer nada
+            return null;
         }
 
         Producto producto = productoOpt.get();
@@ -41,12 +44,14 @@ public class InventarioService {
             Inventario inventario = inventarioOpt.get();
             inventario.setCantidad(cantidad);
             inventarioRepository.save(inventario);
+            return inventario;
         } else {
             // si no existe en inventario -> crear nuevo
             Inventario nuevo = new Inventario();
             nuevo.setProducto(producto);
             nuevo.setCantidad(cantidad);
             inventarioRepository.save(nuevo);
+            return nuevo;
         }
     }
 }

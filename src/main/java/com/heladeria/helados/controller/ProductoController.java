@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -83,12 +84,18 @@ public class ProductoController {
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar un producto", description = "Elimina un producto basado en su ID.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Producto eliminado con éxito"),
-            @ApiResponse(responseCode = "404", description = "Producto no encontrado")
+            @ApiResponse(responseCode = "200", description = "Producto eliminado con éxito"),
+            @ApiResponse(responseCode = "404", description = "Producto no encontrado"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
-    public ResponseEntity<Producto> eliminarProducto(@PathVariable Integer id) {
-        productoService.eliminar(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<String> eliminarProducto(@PathVariable Integer id) {
+
+        Producto existente = productoService.buscarPorId(id);
+        if (existente != null) {
+            productoService.eliminar(id);
+            return new ResponseEntity<>("Producto eliminado", HttpStatus.OK);
+        }
+        return new ResponseEntity<>("Producto no existe", HttpStatus.NOT_FOUND);
     }
 
 
@@ -98,16 +105,16 @@ public class ProductoController {
     @Operation(summary = "Listar inventario", description = "Devuelve una lista con todos los registros de inventario.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lista de inventario obtenida con éxito"),
-            @ApiResponse(responseCode = "204", description = "No hay registros de inventario"),
+            @ApiResponse(responseCode = "404", description = "No hay registros de inventario"),
             @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @GetMapping("/inventario/listarInventario")
     public ResponseEntity<List<Inventario>> listarInventario() {
         List<Inventario> lista = inventarioService.listar();
         if (lista.isEmpty()) {
-            return ResponseEntity.noContent().build();
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        return ResponseEntity.ok(lista);
+        return new ResponseEntity<>(lista, HttpStatus.OK);
     }
 
 
@@ -120,9 +127,12 @@ public class ProductoController {
             @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @PatchMapping("/actualizar-inventario/{id}")
-    public ResponseEntity<Producto> actualizarStock(@PathVariable Integer id, @RequestParam Integer cantidad) {
-        inventarioService.actualizarStock(id, cantidad);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Inventario> actualizarStock(@PathVariable Integer id, @RequestParam Integer cantidad) {
+        Inventario inventario = inventarioService.actualizarStock(id, cantidad);
+        if(inventario == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(inventario, HttpStatus.OK);
     }
 }
 
