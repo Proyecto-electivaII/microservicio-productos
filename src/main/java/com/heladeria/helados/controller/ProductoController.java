@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -119,7 +120,6 @@ public class ProductoController {
 
 
 
-
     @Operation(summary = "actualizar inventario", description = "Actualiza la cantidad existente de helados en el inventario")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Inventario actualizado con éxito"),
@@ -133,6 +133,60 @@ public class ProductoController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         return new ResponseEntity<>(inventario, HttpStatus.OK);
+    }
+
+    // ----- Métodos de búsqueda -----
+
+    @GetMapping("/buscarPorId/{id}")
+    @Operation(summary = "Buscar producto por ID", description = "Obtiene un producto según su ID.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Producto encontrado"),
+            @ApiResponse(responseCode = "404", description = "Producto no encontrado")
+    })
+    public ResponseEntity<Producto> buscarPorId(
+            @PathVariable @Parameter(description = "ID del producto") Integer id) {
+        Producto producto = productoService.buscarPorId(id);
+        if (producto != null) {
+            return new ResponseEntity<>(producto, HttpStatus.OK);
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+
+    @GetMapping("/buscarPorNombre")
+    @Operation(summary = "Buscar producto por nombre", description = "Obtiene un producto según su nombre exacto.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Producto encontrado"),
+            @ApiResponse(responseCode = "404", description = "Producto no encontrado")
+    })
+    public ResponseEntity<?> buscarPorNombre(
+            @RequestParam @Parameter(description = "Nombre del producto") String nombre) {
+        return productoService.buscarPorNombre(nombre)
+                .<ResponseEntity<?>>map(producto -> new ResponseEntity<>(producto, HttpStatus.OK))
+                .orElseGet(() -> new ResponseEntity<>("Producto no encontrado", HttpStatus.NOT_FOUND));
+    }
+
+
+
+    @GetMapping("/buscarPorPrecio")
+    @Operation(summary = "Buscar producto por precio", description = "Busca productos por precio con una condición (mayor, menor o igual).")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Productos encontrados"),
+            @ApiResponse(responseCode = "400", description = "Condición inválida"),
+            @ApiResponse(responseCode = "404", description = "No se encontraron productos")
+    })
+    public ResponseEntity<?> buscarPorPrecio(
+            @RequestParam @Parameter(description = "Precio a comparar") BigDecimal precio,
+            @RequestParam @Parameter(description = "Condición de comparación (mayor, menor, igual)") String condicion) {
+        try {
+            List<Producto> productos = productoService.buscarPorPrecio(precio, condicion);
+            if (productos.isEmpty()) {
+                return new ResponseEntity<>("No se encontraron productos", HttpStatus.NOT_FOUND);
+            }
+            return new ResponseEntity<>(productos, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 }
 
