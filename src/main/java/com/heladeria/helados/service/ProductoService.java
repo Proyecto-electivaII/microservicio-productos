@@ -1,6 +1,8 @@
 package com.heladeria.helados.service;
 
+import com.heladeria.helados.entity.Inventario;
 import com.heladeria.helados.entity.Producto;
+import com.heladeria.helados.repository.InventarioRepository;
 import com.heladeria.helados.repository.ProductoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,9 @@ public class ProductoService {
     @Autowired
     private ProductoRepository productoRepository;
 
+    @Autowired
+    private InventarioRepository inventarioRepository;
+
     public List<Producto> listar() {
         return productoRepository.findAll();
     }
@@ -23,11 +28,20 @@ public class ProductoService {
         return productoRepository.findById(id).orElse(null);
     }
 
-    public Producto guardar(Producto producto) {
-        return productoRepository.save(producto);
+    public Producto guardar(Producto producto, boolean esCrear) {
+        Producto productoGuardado = productoRepository.save(producto);
+        if(esCrear){
+            Inventario nuevo = new Inventario();
+            nuevo.setProducto(productoGuardado);
+            nuevo.setCantidad(1);
+            inventarioRepository.save(nuevo);
+        }
+        return productoGuardado;
     }
 
     public void eliminar(Integer id) {
+        inventarioRepository.findByProducto_Id(id)
+                .ifPresent(inventarioRepository::delete);
         productoRepository.deleteById(id);
     }
 
