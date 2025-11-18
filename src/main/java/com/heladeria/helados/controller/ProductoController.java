@@ -16,7 +16,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/productos")
@@ -53,7 +55,7 @@ public class ProductoController {
             @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     public ResponseEntity<Producto> crearProducto(@RequestBody @Parameter(description = "Datos del producto a crear") Producto producto) {
-        Producto productoNuevo = productoService.guardar(producto);
+        Producto productoNuevo = productoService.guardar(producto, true);
         return new ResponseEntity<>(productoNuevo, HttpStatus.CREATED);
     }
 
@@ -74,7 +76,7 @@ public class ProductoController {
         if (existente != null) {
             existente.setNombre(producto.getNombre());
             existente.setPrecio(producto.getPrecio());
-            Producto productoActualizado = productoService.guardar(existente);
+            Producto productoActualizado = productoService.guardar(existente, false);
             return new ResponseEntity<>(productoActualizado, HttpStatus.OK);
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -89,14 +91,24 @@ public class ProductoController {
             @ApiResponse(responseCode = "404", description = "Producto no encontrado"),
             @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
-    public ResponseEntity<String> eliminarProducto(@PathVariable Integer id) {
+    public ResponseEntity<Map<String, Object>> eliminarProducto(@PathVariable Integer id) {
+
+        Map<String, Object> response = new HashMap<>();
 
         Producto existente = productoService.buscarPorId(id);
         if (existente != null) {
             productoService.eliminar(id);
-            return new ResponseEntity<>("Producto eliminado", HttpStatus.OK);
+
+            response.put("mensaje", "Producto eliminado");
+            response.put("ok", true);
+
+            return ResponseEntity.ok(response);
         }
-        return new ResponseEntity<>("Producto no existe", HttpStatus.NOT_FOUND);
+
+        response.put("mensaje", "Producto no existe");
+        response.put("ok", false);
+
+        return ResponseEntity.ok(response);
     }
 
 
@@ -112,9 +124,6 @@ public class ProductoController {
     @GetMapping("/inventario/listarInventario")
     public ResponseEntity<List<Inventario>> listarInventario() {
         List<Inventario> lista = inventarioService.listar();
-        if (lista.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
         return new ResponseEntity<>(lista, HttpStatus.OK);
     }
 
